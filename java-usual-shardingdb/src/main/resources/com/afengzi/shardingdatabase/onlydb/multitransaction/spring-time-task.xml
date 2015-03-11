@@ -1,0 +1,1881 @@
+<?xml version="1.0" encoding="GBK"?>
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd"
+	default-autowire="byName">
+	<!-- 初始化skuInfo -->
+	<bean id="initSkuInfoScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail">
+						<bean class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+							<property name="targetObject" ref="localSkuManager" />
+							<property name="targetMethod" value="initSkuInfo" />
+							<property name="concurrent" value="false" />
+						</bean>
+					</property>
+					<!--每隔5分钟执行1次 -->
+					<property name="cronExpression" value="0 0/5 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>true</value>
+		</property>
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>	
+	<!-- 调用外部接口充值 -->
+	<bean id="rechargeScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="rechargeOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="rechargeOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="rechargeMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 发送结算消息 -->
+	<bean id="sendJieSuanMsgScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="sendJieSuanMsgOnce"/>
+					<!--每隔10分钟执行1次 -->
+					<property name="cronExpression" value="0 0/10 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="sendJieSuanMsgOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="sendJieSuanMsgMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 自动退款 -->
+	<bean id="autoRefundScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoRefundOnce"/>
+					<!--每隔10分钟执行1次 -->
+					<property name="cronExpression" value="0 0/10 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoRefundOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoRefundMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 假成功自动退款 -->
+	<bean id="autoQixiaoRefundScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoQixiaoRefundOnce"/>
+					<!--每隔10分钟执行1次 -->
+					<property name="cronExpression" value="0 0/10 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoQixiaoRefundOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoQixiaoRefundMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 更新父订单状态 -->
+	<bean id="refreshParentOrderScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="refreshParentOrderOnce"/>
+					<!--每隔30分钟执行1次 -->
+					<property name="cronExpression" value="0 0/30 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="refreshParentOrderOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="refreshParentOrderTaskTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 后台自动中奖信息审核通过worker -->
+	<bean id="autoAuditActiveScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoAuditActiveOnce"/>
+					<!--每隔1分钟执行1次 -->
+					<property name="cronExpression" value="0 0/1 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="autoAuditActiveOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoAuditActiveTimeTaskService" />
+	    <property name="targetMethod" value="auditActive" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 后台自动派发积分京豆worker -->
+	<bean id="autoAddScoreForPinScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoAddScoreForPinOnce"/>
+					<!--每隔1分钟执行1次 -->
+					<property name="cronExpression" value="0 0/1 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoAddScoreForPinOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoAddScoreForPinMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 成本价生效 -->
+	<bean id="synPriceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="synPriceOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="synPriceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="synPriceTimer" />
+	    <property name="targetMethod" value="doPriceWorker" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 销售价生效 -->
+	<bean id="synSalePriceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="synSalePriceOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="synSalePriceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="synPriceTimer" />
+	    <property name="targetMethod" value="salePriceSyn" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 企销销售价生效 -->
+	<bean id="qixiaoSalePriceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="qixiaoSalePriceOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="qixiaoSalePriceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="synPriceTimer" />
+	    <property name="targetMethod" value="doQixiaoSalePrice" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 超时未支付删单 -->
+	<bean id="delUnpaidOrderScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="delUnpaidOrderOnce"/>
+					<!--每隔1小时执行1次 -->
+					<property name="cronExpression" value="0 0 0/1 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="delUnpaidOrderOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="delUnpaidOrderService" />
+	    <property name="targetMethod" value="doDelTimeOutOrder" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 充值异常订单转为充值失败订单 -->
+	<bean id="changeChargeExceptionOrderToFailOrderScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="changeChargeExceptionOrderToFailOrderOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="changeChargeExceptionOrderToFailOrderOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="changeExceptionOrderToFailMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 自动反查外部订单状态 高频 -->
+	<bean id="autoSearchOutOrderStatusHighScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoSearchOutOrderStatusHighOnce"/>
+					<!--每隔10分钟执行1次 -->
+					<property name="cronExpression" value="0 0/10 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="40" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="autoSearchOutOrderStatusHighOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="autoSearchOutOrderStatusService" />
+	    <property name="targetMethod" value="autoSearchOutOrderStatusHigh" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 自动反查外部订单状态 低频 -->
+	<bean id="autoSearchOutOrderStatusLowScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoSearchOutOrderStatusLowOnce"/>
+					<!--每隔2小时执行1次 -->
+					<property name="cronExpression" value="0 0 0/2 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="40" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="autoSearchOutOrderStatusLowOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoSearchOutOrderStatusService" />
+	    <property name="targetMethod" value="autoSearchOutOrderStatusLow" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 异常情况监控 -->
+	<!--<bean id="monitorTimeTaskServiceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">-->
+		<!--<property name="triggers">-->
+			<!--<list>-->
+				<!--<bean class="org.springframework.scheduling.quartz.CronTriggerBean">-->
+					<!--<property name="jobDetail" ref="monitorTimeTaskServiceOnce"/>-->
+					<!--&lt;!&ndash;每隔2分钟执行1次 &ndash;&gt;-->
+					<!--<property name="cronExpression" value="0 0/2 * * * ?" />-->
+				<!--</bean>-->
+			<!--</list>-->
+		<!--</property>-->
+		<!--<property name="autoStartup">-->
+			<!--<value>false</value>-->
+		<!--</property>-->
+		<!--<property name="startupDelay" value="40" />-->
+		<!--<property name="quartzProperties">-->
+			<!--<props>-->
+				<!--<prop key="org.quartz.threadPool.threadCount">1</prop>-->
+			<!--</props>-->
+		<!--</property>-->
+	<!--</bean>-->
+    <!--<bean id="monitorTimeTaskServiceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">-->
+	    <!--<property name="targetObject" ref="monitorTimeTaskService" />-->
+		<!--<property name="targetMethod" value="monitor" />-->
+		<!--<property name="concurrent" value="false" />-->
+	<!--</bean>-->
+	<!-- 订单数据迁移历史-->
+	<bean id="moveOrdinaryOrderScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="moveOrdinaryOrderOnce"/>
+					<!--每天00:15分执行 -->
+					<property name="cronExpression" value="0 15 0 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="50" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="moveOrdinaryOrderOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="moveOrdinaryOrderTimeTaskService" />
+		<property name="targetMethod" value="moveOrdinaryOrder" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- 订单数据迁移历史-->
+	<bean id="moveCzTaskScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="moveCzTaskOnce"/>
+					<!--每天00:15分执行 -->
+					<property name="cronExpression" value="0 15 0 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="50" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="moveCzTaskOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="moveCzTaskTimeTaskService" />
+	    <property name="targetMethod" value="moveCzTask" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 订单数据迁移历史-->
+	<bean id="moveBatchOrderScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="moveBatchOrderOnce"/>
+					<!--每天00:15分执行 -->
+					<property name="cronExpression" value="0 15 0 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="50" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="moveBatchOrderOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="moveBatchOrderTimeTaskService" />
+	    <property name="targetMethod" value="moveBatchOrder" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 订单数据统计 -->
+	<bean id="statisticsServiceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="statisticsServiceOnce"/>
+					<!--每天天凌晨3点执行 -->
+					<property name="cronExpression" value="0 0 3 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="50" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="statisticsServiceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="orderStatisticsTimeService" />
+	    <property name="targetMethod" value="derivedStatisticsOrderList" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- 根据等待付款订单orderid读取redis数据，支付回调并充值 -->
+	<bean id="orderPayServiceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="orderPayServiceOnce"/>
+					<!--每隔1小时执行1次 -->
+					<property name="cronExpression" value="0 0/${chongzhiman.readRedisTime} * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="orderPayServiceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="orderPayServiceI" />
+		<property name="targetMethod" value="findNeedPayCallBackOrders" />
+		<property name="concurrent" value="false" />
+	</bean>
+    <!-- 任务表超过5次失败记录监控 -->
+	<bean id="monitorTaskFailOverFiveScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="monitorTaskFailOverFiveOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/30 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="monitorTaskFailOverFiveOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="monitorTimeTaskService" />
+		<property name="targetMethod" value="monitorTaskFailCountFive" />
+		<property name="concurrent" value="false" />
+	</bean>
+    <!-- 是否存在锁定超过10分钟的记录 -->
+	<bean id="monitorTaskLuckOverTenScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="monitorTaskLuckOverTenOnce"/>
+					<!--每隔1小时执行1次 -->
+					<property name="cronExpression" value="0 0 0/1 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="60" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="monitorTaskLuckOverTenOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="monitorTimeTaskService" />
+		<property name="targetMethod" value="monitorTaskLuckOverTen" />
+		<property name="concurrent" value="false" />
+	</bean>
+    <!-- 自动发送活动卡密短信 -->
+	<bean id="activeRechCardSerivceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="activeRechCardSerivceOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="activeRechCardSerivceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="activeRechCardForPinMultiTaskProcessor" />
+		<property name="targetMethod" value="doWork" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- 短信下发配置 luochao-->
+		<bean id="messageSendSerivceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="messageSendSerivceOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="messageSendSerivceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="messageSendMultiTaskProcessor" />
+		<property name="targetMethod" value="doWork" />
+		<property name="concurrent" value="false" />
+	</bean>
+    <!-- 监控商家接口 -->
+	<bean id="monitorInterfaceServiceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="monitorInterfaceServiceOnce"/>
+					<!--每天00:15分执行 -->
+					<property name="cronExpression" value="0 0/30 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="50" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="monitorInterfaceServiceOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="monitorInterfaceService" />
+	    <property name="targetMethod" value="infaMonitor" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	
+	<!-- 5分钟内充值任务待处理条数 -->
+	<bean id="monitorTaskRechargeScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="monitorTaskRechargeOnce"/>
+					<!--每隔5分钟执行1次 -->
+					<property name="cronExpression" value="0 0/5 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="60" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="monitorTaskRechargeOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="monitorTimeTaskService" />
+		<property name="targetMethod" value="monitorTaskRecharge" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- 砸蛋监控数据同步到数据库 -->
+	<bean id="synZadanMonitorDataScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="synZadanMonitorDataOnce"/>
+					<!--每隔30分钟执行1次 -->
+					<property name="cronExpression" value="0 0/30 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="synZadanMonitorDataOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="synZadanMonitorDataService" />
+	    <property name="targetMethod" value="synZadanMonitorData" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 企销充值回调 -->
+	<bean id="qixiaoRechargeScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="qixiaoRechargeOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="qixiaoRechargeOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="qixiaoRechargeMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 企销假成功回调 -->
+	<bean id="qixiaoFakeSuccessScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="qixiaoFakeSuccessOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="qixiaoFakeSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="qixiaoFakeSuccessMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 自编短信发送 -->
+		<bean id="ziBianMessageScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="ziBianMessageSuccessOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="ziBianMessageSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="ziBianMessageMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!--自动修改异常表状态 -->
+	<bean id="autoUpdateExceptionOverStatusScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="exceptionOnce"/>
+					<!--每隔30分钟执行1次 -->
+					<property name="cronExpression" value="0 0/30 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="exceptionOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="autoUpdateExceptionOverStatusService" />
+		<property name="targetMethod" value="updateOverTimeStatus" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- erp未完成状态查询worker -->
+	<bean id="erpUndoneScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="erpUndoneOnce"/>
+					<!--每天03:00分执行 -->
+					<property name="cronExpression" value="0 0 3 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="erpUndoneOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="autoErpUndoneService" />
+	    <property name="targetMethod" value="autoSearchJFAndBalanceOrder" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	
+	<!--  已完成订单向订单服务中心同步-->
+	<bean id="synOrderToServiceCenter" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="synOrderServiceCenterOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="synOrderServiceCenterOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="synOrderServiceCenterProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	
+    <!-- 定时缓存广告 worker start -->
+    <bean id="cacheAdQuartz" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="cacheAdTimeTaskService" />
+        <property name="targetMethod" value="cacheAd" />
+        <property name="concurrent" value="false" />
+    </bean>
+    <bean id="cacheAdTrigger" class="org.springframework.scheduling.quartz.CronTriggerBean">
+        <property name="jobDetail" ref="cacheAdQuartz" />
+        <!--每5分钟执行一次-->
+        <property name="cronExpression" value="0 0/5 * * * ? *" />
+    </bean>
+    <bean id="cacheAdScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <ref bean="cacheAdTrigger" />
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+    </bean>
+    <!-- 定时缓存广告 end -->
+    
+    <!-- 查询订单中间件Work Begin -->
+	<bean id="searchOrderComponentScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="searchOrderComponentOnce"/>
+			        <!--每5分钟执行一次-->
+			        <property name="cronExpression" value="0 0/5 * * * ? *" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="50" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="searchOrderComponentOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="orderWsTimeTaskService" />
+	    <property name="targetMethod" value="callOrderWs" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- 查询订单中间件Work End -->
+    <!-- 预付款向计费系统同步数据-->
+	<bean id="yfkScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="synYuFuKuanOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="synYuFuKuanOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="yuFuKuanTimeTaskService" />
+	    <property name="targetMethod" value="syncYuFuKuan" />
+	    <property name="concurrent" value="false" />
+	</bean>
+
+	<!--  定期购自动生成下发短信worker	-->
+	<bean id="filterRechargeSMSScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="filterRechargeSMSOnce"/>
+					<!--每天早上八点执行 -->
+					<property name="cronExpression" value="0 0 8 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="filterRechargeSMSOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoFilterRechargeSMSTimeTaskService" />
+	    <property name="targetMethod" value="filterRechargeSMS" />
+	    <property name="concurrent" value="false" />
+	</bean>
+
+	<!-- 定期购自动下发短信worker-->
+	<bean id="autoSendRechargeSMSScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoSendRechargeSMSOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="autoSendRechargeSMSOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoSendRechargeSMSMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 定期购自动下单worker -->
+	<bean id="autoCreatedErpOrderIdScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoCreatedErpOrderIdOnce"/>
+					<!--每隔1分钟执行1次 -->
+					<property name="cronExpression" value="0 0/1 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoCreatedErpOrderIdOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoCreatedErpOrderIdMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 定期购快捷支付自动支付worker -->
+	<bean id="autoPayErpOrderIdScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoPayErpOrderIdOnce"/>
+					<!--每隔1分钟执行1次 -->
+					<property name="cronExpression" value="0 0/1 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoPayErpOrderIdOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoPayErpOrderIdMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 删除接口监控日志-->
+	<bean id="autoDelInterMonitorLogScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoDelInterMonitorLogOnce"/>
+					<!--每天凌晨3点执行 -->
+					<property name="cronExpression" value="0 0 3 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="50" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoDelInterMonitorLogOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoDelInterMonitorLogService" />
+		<property name="targetMethod" value="delInfaMonitorLog" />
+		<property name="concurrent" value="false" />
+	</bean>
+	<!-- 自动同步返点数据worker -->
+	<bean id="autoRebateServiceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoRebateOnce"/>
+					<!--每隔1分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="autoRebateOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoRebateService" />
+	    <property name="targetMethod" value="autoSyncData" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 自动生成返点数据worker -->
+	<bean id="autoRebateInfoServiceScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoRebateInfoOnce"/>
+					<!--每天天凌晨2点执行 -->
+					<property name="cronExpression" value="0 0 2 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="autoRebateInfoOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoRebateInfoService" />
+	    <property name="targetMethod" value="autoCreateData" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 预存话费调用北京移动办理业务接口 -->
+	<bean id="yuCunHuaFeiScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="yuCunHuaFeiOnce"/>
+					<!--每隔2分钟执行1次 -->
+					<property name="cronExpression" value="0 0/2 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="yuCunHuaFeiOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="yuCunHuaFeiMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	
+	
+	<!--add by lixiuhai at 20131018 自动插入生成文件的worker -->
+	<bean id="autoInsertUploadFileScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoInsertUploadFileJob"/>
+					<!--每天凌晨0点执行1次 -->
+					<property name="cronExpression" value="0 0 0 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="autoInsertUploadFileJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoInsertUploadFileSercvice" />
+	    <property name="targetMethod" value="insertUploadFileTask" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	
+		<!--add by lixiuhai at 20131018 自动SFTP对账文件 -->
+	<bean id="autoSftpDuizhangScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoSftpDuizhangJob"/>
+					<!--每天早上1-6点每隔5分钟执行 -->
+					<property name="cronExpression" value="0 0/5 1-6 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoSftpDuizhangJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoSftpDuizhangMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	    </bean>
+	    
+	    <!--add by lixiuhai at 20131018 自动SFTP传输结算单文件 -->
+	<bean id="autoSftpJiesuanScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="autoSftpJiesuanJob"/>
+					<!--每天早上3-6点每隔5分钟执行 -->
+					<property name="cronExpression" value="0 0/5 3-6 * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="10" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+    <bean id="autoSftpJiesuanJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="autoSftpJiesuanMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	    </bean>
+
+	 <!-- 更新父订单状态 -->
+	<bean id="multiRefreshParentOrderScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="multiRechargeRefreshParentOrderOnce"/>
+					<!--每隔10分钟执行1次 -->
+					<property name="cronExpression" value="0 0/10 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="20" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	
+	<bean id="multiRechargeRefreshParentOrderOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="multiRefreshParentOrderTaskTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	<!-- 满意度评价发送到MQ队列 -->
+	<bean id="autoCommentCertificateScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="commentCertificateSuccessOnce"/>
+					<!--每隔1分钟执行1次 -->
+					<property name="cronExpression" value="0 0/1 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="commentCertificateSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="commentCertificateMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+	
+	<!-- 任务表充值退款监控报警 -->
+	<bean id="orderStateWarnScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail">
+						<bean class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+							<property name="targetObject" ref="orderStateWarnTaskService" />
+							<property name="targetMethod" value="orderStateWarn" />
+							<property name="concurrent" value="false" />
+						</bean>
+					</property>
+					<!--每隔30分钟执行1次 -->
+					<property name="cronExpression" value="0 0/30 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>true</value>
+		</property>
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>	
+	
+	<!-- 企销余额扣款申请MQ发送 -->
+	<bean id="sendQixiaoPayBalanceMqScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+		<property name="triggers">
+			<list>
+				<bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+					<property name="jobDetail" ref="sendQixiaoPayBalanceMqSuccessOnce"/>
+					<!--每隔1分钟执行1次 -->
+					<property name="cronExpression" value="0 0/1 * * * ?" />
+				</bean>
+			</list>
+		</property>
+		<property name="autoStartup">
+			<value>false</value>
+		</property>
+		<property name="startupDelay" value="30" />
+		<property name="quartzProperties">
+			<props>
+				<prop key="org.quartz.threadPool.threadCount">1</prop>
+			</props>
+		</property>
+	</bean>
+	<bean id="sendQixiaoPayBalanceMqSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+	    <property name="targetObject" ref="sendQixiaoPayBalanceMqMultiTaskProcessor" />
+	    <property name="targetMethod" value="doWork" />
+	    <property name="concurrent" value="false" />
+	</bean>
+
+    <!-- 任务表记录数量监控 -->
+    <bean id="monitorTaskCountScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="monitorTaskCountSuccessOnce"/>
+                    <!--每隔4小时执行1次 -->
+                    <property name="cronExpression" value="0 0 0/4 * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="monitorTaskCountSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="monitorTimeTaskService" />
+        <property name="targetMethod" value="monitorTaskCount" />
+        <property name="concurrent" value="false" />
+    </bean>
+	
+
+    <!-- 创建对账记录worker -->
+    <bean id="createCheckInfoScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="createCheckInfoSuccessOnce"/>
+                    <!--每天凌晨执行1次 -->
+                    <property name="cronExpression" value="12 1 0 * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="createCheckInfoSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="checkTaskService" />
+        <property name="targetMethod" value="createCheckInfo" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 查找对账文件worker -->
+    <bean id="findCheckFileScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="findCheckFileOnce"/>
+                    <!--每半小时执行1次 -->
+                    <property name="cronExpression" value="20 8/30 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="findCheckFileOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="checkTaskService" />
+        <property name="targetMethod" value="findCheckFile" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 对账文件对账worker -->
+    <bean id="scanCheckScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="scanCheckOnce"/>
+                    <!--每半小时执行1次 -->
+                    <property name="cronExpression" value="20 10/30 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="scanCheckOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="checkTaskService" />
+        <property name="targetMethod" value="scanCheck" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 查找扎差文件worker -->
+    <bean id="scanRefundFileScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="scanRefundFileOnce"/>
+                    <!--每半小时执行1次 -->
+                    <property name="cronExpression" value="20 12/30 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="scanRefundFileOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="checkTaskService" />
+        <property name="targetMethod" value="scanRefundFile" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!--&lt;!&ndash; 扎差文件扎差worker &ndash;&gt;-->
+    <!--<bean id="scanRefundScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">-->
+        <!--<property name="triggers">-->
+            <!--<list>-->
+                <!--<bean class="org.springframework.scheduling.quartz.CronTriggerBean">-->
+                    <!--<property name="jobDetail" ref="scanRefundOnce"/>-->
+                    <!--&lt;!&ndash;每半小时执行1次 &ndash;&gt;-->
+                    <!--<property name="cronExpression" value="20 14/30 * * * ?" />-->
+                <!--</bean>-->
+            <!--</list>-->
+        <!--</property>-->
+        <!--<property name="autoStartup">-->
+            <!--<value>false</value>-->
+        <!--</property>-->
+        <!--<property name="startupDelay" value="30" />-->
+        <!--<property name="quartzProperties">-->
+            <!--<props>-->
+                <!--<prop key="org.quartz.threadPool.threadCount">1</prop>-->
+            <!--</props>-->
+        <!--</property>-->
+    <!--</bean>-->
+    <!--<bean id="scanRefundOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">-->
+        <!--<property name="targetObject" ref="checkTaskService" />-->
+        <!--<property name="targetMethod" value="scanRefund" />-->
+        <!--<property name="concurrent" value="false" />-->
+    <!--</bean>-->
+
+    <!-- 收付费结算 -->
+    <bean id="finChargeScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="finChargeOnce"/>
+                    <!--每半小时执行1次 -->
+                    <property name="cronExpression" value="20 17/30 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="finChargeOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="checkTaskService" />
+        <property name="targetMethod" value="finaceCharge" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 更新手支充值状态worker -->
+    <bean id="updateMobilePayRechargeStatusScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="updateMobilePayRechargeStatusSuccessOnce"/>
+                    <!--凌晨1点 晚上9点 -->
+                    <property name="cronExpression" value="0 0/30 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="updateMobilePayRechargeStatusSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="updateMobilePayRechargeStatusMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 更新手支结算状态worker -->
+    <bean id="updateMobilePayAccountStatusScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="updateMobilePayAccountStatusSuccessOnce"/>
+                    <!--凌晨2点 晚上10点-->
+                    <property name="cronExpression" value="0 0/30 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="updateMobilePayAccountStatusSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="updateMobilePayAccountStatusMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 更新手支核销状态worker -->
+    <bean id="updateMobilePayCancelStatusScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="updateMobilePayCancelStatusSuccessOnce"/>
+                    <!--凌晨2点 晚上10点-->
+                    <property name="cronExpression" value="0 0/30 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="updateMobilePayCancelStatusSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="updateMobilePayCancelStatusMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 自动反查外部订单状态 手支 -->
+    <bean id="autoSearchOutOrderStatusMobilePayScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="autoSearchOutOrderStatusMobilePayOnce"/>
+                    <!--每隔1分钟执行1次 -->
+                    <property name="cronExpression" value="0 0/1 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="40" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="autoSearchOutOrderStatusMobilePayOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="autoSearchOutOrderStatusMobilePayMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 移动端充值成功送到MQ队列 -->
+    <bean id="autoMobileRechargeSuccessMqScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="autoMobileRechargeSuccessMqSuccessOnce"/>
+                    <!--每隔1分钟执行1次 -->
+                    <property name="cronExpression" value="0 0/1 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="30" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="autoMobileRechargeSuccessMqSuccessOnce" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="mobileRechargeSuccessMqMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 自动生成对账文件worker -->
+    <bean id="createFileAndUploadScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="createFileAndUploadJob"/>
+                    <!--每天早上1-6点每隔5分钟执行 -->
+                    <property name="cronExpression" value="0 0/5 1-6 * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="10" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="createFileAndUploadJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="createFileAndUploadMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 传输对账文件worker -->
+    <bean id="transferDzFileScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="transferDzFileJob"/>
+                    <!--每天早上1-6点每隔5分钟执行 -->
+                    <property name="cronExpression" value="0 0/5 4-8 * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="10" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="transferDzFileJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="transferFileMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 结算任务监控worker -->
+    <bean id="finTaskMonitorScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="finTaskMonitorJob"/>
+                    <!--每天早上9点执行 -->
+                    <property name="cronExpression" value="0 0 9 * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="10" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="finTaskMonitorJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="monitorTimeTaskService" />
+        <property name="targetMethod" value="monitorFinTaskCount" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!-- 禁售商家商品worker -->
+    <bean id="venderDisableSkuScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="venderDisableSkuJob"/>
+                    <!-- 每隔2分钟执行 -->
+                    <property name="cronExpression" value="0 0/2 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="10" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="venderDisableSkuJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="venderDisableSkuMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!--企销订单支付异常已取消通知worker -->
+    <bean id="notifyQixiaoResultScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="notifyQixiaoResultJob"/>
+                    <!-- 每隔2分钟执行 -->
+                    <property name="cronExpression" value="0 0/2 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="10" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="notifyQixiaoResultJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="notifyQixiaoResultlMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+    <!--北京移动轮询服务状态worker -->
+    <bean id="monitorBJServiseScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="monitorBJServiseJob"/>
+                    <!-- 每隔1分钟执行 -->
+                    <property name="cronExpression" value="0 0/1 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="10" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="monitorBJServiseJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="chinaMobileService" />
+        <property name="targetMethod" value="monitorBJMobile" />
+        <property name="concurrent" value="false" />
+    </bean>
+    <!--自动发送优惠券worker -->
+    <bean id="autoSendCouponScheduler" class="org.springframework.scheduling.quartz.SchedulerFactoryBean">
+        <property name="triggers">
+            <list>
+                <bean class="org.springframework.scheduling.quartz.CronTriggerBean">
+                    <property name="jobDetail" ref="autoSendCouponJob"/>
+                    <!-- 每隔2分钟执行 -->
+                    <property name="cronExpression" value="0 0/2 * * * ?" />
+                </bean>
+            </list>
+        </property>
+        <property name="autoStartup">
+            <value>false</value>
+        </property>
+        <property name="startupDelay" value="10" />
+        <property name="quartzProperties">
+            <props>
+                <prop key="org.quartz.threadPool.threadCount">1</prop>
+            </props>
+        </property>
+    </bean>
+    <bean id="autoSendCouponJob" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+        <property name="targetObject" ref="autoSendCouponTaskMultiTaskProcessor" />
+        <property name="targetMethod" value="doWork" />
+        <property name="concurrent" value="false" />
+    </bean>
+
+
+</beans>
