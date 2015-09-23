@@ -51,7 +51,7 @@
             <properties>
                 <!-- 手机充值数据源 mysql -->
                 <afengzi.jdbc.driver>com.mysql.jdbc.Driver</afengzi.jdbc.driver>
-                <afengzi.jdbc.url>jdbc:mysql://192.168.166.30:3359/popafengzi?characterEncoding=UTF-8
+                <afengzi.jdbc.url>jdbc:mysql://192.168.166.30:3359/afengzi?characterEncoding=UTF-8
                 </afengzi.jdbc.url>
                 <afengzi.jdbc.username>afengzi_rw</afengzi.jdbc.username>
                 <afengzi.jdbc.password>123456</afengzi.jdbc.password>
@@ -64,8 +64,8 @@
                 <!-- 手机充值数据源 oracle -->
                 <afengzi.jdbc.oracle.driver>oracle.jdbc.driver.OracleDriver</afengzi.jdbc.oracle.driver>
                 <afengzi.jdbc.oracle.url>jdbc:oracle:thin:@127.0.0.1:1521:testdb1</afengzi.jdbc.oracle.url>
-                <afengzi.jdbc.oracle.username>popafengzi_dev</afengzi.jdbc.oracle.username>
-                <afengzi.jdbc.oracle.password>popafengzi_dev</afengzi.jdbc.oracle.password>
+                <afengzi.jdbc.oracle.username>afengzi_dev</afengzi.jdbc.oracle.username>
+                <afengzi.jdbc.oracle.password>afengzi_dev</afengzi.jdbc.oracle.password>
             </properties>
         </profile>
     </profiles>
