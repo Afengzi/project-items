@@ -20,7 +20,7 @@ public class CreateConfigPageServiceUtil {
 
     public static void main(String[] args) {
         CreateConfigPageServiceUtil serviceUtil = new CreateConfigPageServiceUtil();
-        serviceUtil.createConfigPage("spring-config-threadpool", "./jd-chongzhi-web/src/test/java/com/jd/sharding/");
+        serviceUtil.createConfigPage("spring-config-threadpool", "./afengzi-web/src/test/java/com/sharding/");
     }
 
     public void createConfigPage(String templateName, String outPath) {

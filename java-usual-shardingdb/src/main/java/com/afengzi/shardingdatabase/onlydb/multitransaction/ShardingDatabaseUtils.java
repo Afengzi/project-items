@@ -5,7 +5,7 @@ package com.afengzi.shardingdatabase.onlydb.multitransaction;
  */
 public class ShardingDatabaseUtils {
 
-    public static final String DATABASE_ID_PREFIX = "chongzhiDataSource_" ;
+    public static final String DATABASE_ID_PREFIX = "afengziDataSource_" ;
 
     public static String getDataSourceId(long shardingId){
         String flag = String.valueOf(shardingId).substring(0,2) ;

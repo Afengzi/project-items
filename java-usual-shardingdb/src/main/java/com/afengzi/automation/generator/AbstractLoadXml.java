@@ -29,7 +29,7 @@ public abstract class AbstractLoadXml {
     public static final String LIST = "list";
     public static final String LIST_SUFFIX = "list";
     public static final String THREAD_POOL_CLAZZ = "org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor";
-    public static final String TASK_PROCESS_CLAZZ = "com.jd.chongzhi.service.task.MultiTaskProcessor";
+    public static final String TASK_PROCESS_CLAZZ = "com.afengzi.chongzhi.service.task.MultiTaskProcessor";
 
     protected Document document;
 

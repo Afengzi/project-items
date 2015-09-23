@@ -26,6 +26,11 @@
             <artifactId>druid</artifactId>
             <version>1.0.12</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.velocity</groupId>
+            <artifactId>velocity</artifactId>
+            <version>1.5</version>
+        </dependency>
     </dependencies>
 
     <profiles>
@@ -45,22 +50,22 @@
             </build>
             <properties>
                 <!-- 手机充值数据源 mysql -->
-                <chongzhi.jdbc.driver>com.mysql.jdbc.Driver</chongzhi.jdbc.driver>
-                <chongzhi.jdbc.url>jdbc:mysql://192.168.166.30:3359/popchongzhi?characterEncoding=UTF-8
-                </chongzhi.jdbc.url>
-                <chongzhi.jdbc.username>chongzhi_rw</chongzhi.jdbc.username>
-                <chongzhi.jdbc.password>ud.dj1d.1jd1d.D</chongzhi.jdbc.password>
+                <afengzi.jdbc.driver>com.mysql.jdbc.Driver</afengzi.jdbc.driver>
+                <afengzi.jdbc.url>jdbc:mysql://192.168.166.30:3359/popafengzi?characterEncoding=UTF-8
+                </afengzi.jdbc.url>
+                <afengzi.jdbc.username>afengzi_rw</afengzi.jdbc.username>
+                <afengzi.jdbc.password>123456</afengzi.jdbc.password>
                 <!-- 手机充值数据源历史库 mysql -->
-                <chongzhi.his.jdbc.url>jdbc:mysql://192.168.166.30:3359/chongzhilishi?characterEncoding=UTF-8
-                </chongzhi.his.jdbc.url>
-                <chongzhi.history.jdbc.username>chongzhi_rw</chongzhi.history.jdbc.username>
-                <chongzhi.history.jdbc.password>ud.dj1d.1jd1d.D</chongzhi.history.jdbc.password>
+                <afengzi.his.jdbc.url>jdbc:mysql://192.168.166.30:3359/afengzilishi?characterEncoding=UTF-8
+                </afengzi.his.jdbc.url>
+                <afengzi.history.jdbc.username>afengzi_rw</afengzi.history.jdbc.username>
+                <afengzi.history.jdbc.password>123456</afengzi.history.jdbc.password>
 
                 <!-- 手机充值数据源 oracle -->
-                <chongzhi.jdbc.oracle.driver>oracle.jdbc.driver.OracleDriver</chongzhi.jdbc.oracle.driver>
-                <chongzhi.jdbc.oracle.url>jdbc:oracle:thin:@10.10.225.20:1521:testdb1</chongzhi.jdbc.oracle.url>
-                <chongzhi.jdbc.oracle.username>popchongzhi_dev</chongzhi.jdbc.oracle.username>
-                <chongzhi.jdbc.oracle.password>popchongzhi_dev</chongzhi.jdbc.oracle.password>
+                <afengzi.jdbc.oracle.driver>oracle.jdbc.driver.OracleDriver</afengzi.jdbc.oracle.driver>
+                <afengzi.jdbc.oracle.url>jdbc:oracle:thin:@127.0.0.1:1521:testdb1</afengzi.jdbc.oracle.url>
+                <afengzi.jdbc.oracle.username>popafengzi_dev</afengzi.jdbc.oracle.username>
+                <afengzi.jdbc.oracle.password>popafengzi_dev</afengzi.jdbc.oracle.password>
             </properties>
         </profile>
     </profiles>
